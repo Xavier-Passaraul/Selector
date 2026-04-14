@@ -31,8 +31,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Base de datos
-const db = new sqlite3.Database('./db/database.db', (err) => {
+const db = new sqlite3.Database('/tmp/database.db', (err) => {
   if (err) console.error('Error con BD:', err);
   else console.log('Conectado a SQLite');
 });
