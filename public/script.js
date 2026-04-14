@@ -1,7 +1,7 @@
 // ============================================
 // CONFIGURACIÓN Y ESTADO
 // ============================================
-console.log("VERSION NUEVA FUNCIONANDO");
+console.log("VERSION NUEVA SUBIDA A RENDER");
 
 const API_URL = window.location.origin + '/api';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
