@@ -49,7 +49,7 @@ Sistema completo de gestión de personajes para eventos organizacionales. Permit
 
 1. **Clonar/Abrir el proyecto**
 ```bash
-cd "d:\Users\Xavier\Desktop\Programacion\Tiendas Online\Selector"
+
 ```
 
 2. **Instalar dependencias**
