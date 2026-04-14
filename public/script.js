@@ -2,7 +2,7 @@
 // CONFIGURACIÓN Y ESTADO
 // ============================================
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.origin + '/api';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 let usuarioActual = null;
 let tokenUsuario = null;
