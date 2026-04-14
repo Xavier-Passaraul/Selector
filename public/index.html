@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selector de Personajes - Eventos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Página de Login/Registro -->
+  <div id="authPage" class="page active">
+    <div class="auth-container">
+      <div class="auth-box">
+        <h1 class="ancient-title">修仙者选择</h1>
+        <p class="subtitle">Selector de Personajes de Eventos</p>
+        
+        <div id="loginForm" class="auth-form active">
+          <h2>Iniciar Sesión</h2>
+          <input type="text" id="loginNombre" placeholder="Nombre del Personaje" />
+          <input type="password" id="loginContraseña" placeholder="Contraseña" />
+          <button onclick="login()" class="btn-primary">Entrar al Reino</button>
+          <p>¿No tienes cuenta? <a href="#" onclick="toggleAuth()">Crear una</a></p>
+        </div>
+
+        <div id="registerForm" class="auth-form">
+          <h2>Crear Cuenta</h2>
+          <input type="text" id="registerNombre" placeholder="Nombre del Personaje" />
+          <input type="password" id="registerContraseña" placeholder="Contraseña" />
+          <input type="password" id="registerConfirm" placeholder="Confirmar Contraseña" />
+          <button onclick="register()" class="btn-primary">Registrarse</button>
+          <p>¿Ya tienes cuenta? <a href="#" onclick="toggleAuth()">Inicia sesión</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Página Principal -->
+  <div id="mainPage" class="page">
+    <header class="header">
+      <div class="logo">
+        <h1>修仙者选择</h1>
+        <p>ArkaedaCompany</p>
+      </div>
+      <div class="user-info">
+        <span id="userDisplay"></span>
+        <button onclick="logout()" class="btn-logout">Salir</button>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <div class="section-header">
+        <h2>Personajes para Eventos</h2>
+        <button onclick="openAddModal()" class="btn-primary">➕ Agregar Personaje</button>
+      </div>
+
+      <!-- Tabs de navegación -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('mis-personajes')">Mis Personajes</button>
+        <button class="tab-btn" onclick="switchTab('buscar-personajes')">Buscar Personajes</button>
+      </div>
+
+      <!-- Tab: Mis Personajes -->
+      <div id="mis-personajes" class="tab-content active">
+        <div id="misPersonajesList" class="personajes-grid">
+          <!-- Se llena con JavaScript -->
+        </div>
+      </div>
+
+      <!-- Tab: Buscar Personajes -->
+      <div id="buscar-personajes" class="tab-content">
+        <div id="personajesList" class="personajes-grid">
+          <!-- Se llena con JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Agregar Personaje -->
+  <div id="addModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Crear Nuevo Personaje</h2>
+        <button onclick="closeAddModal()" class="close-btn">&times;</button>
+      </div>
+
+      <form id="formPersonaje">
+        <div class="form-group">
+          <label>Nombre del Personaje *</label>
+          <input type="text" id="nombre" placeholder="Nombre único" required />
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Personaje *</label>
+          <select id="tipo" onchange="actualizarEquipamiento()" required>
+            <option value="">Seleccionar...</option>
+            <option value="Guerrero">Guerrero</option>
+            <option value="Taotista de agua">Taotista de agua</option>
+            <option value="Taotista de fuego">Taotista de fuego</option>
+            <option value="Troyano">Troyano</option>
+            <option value="Arquero">Arquero</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Evento *</label>
+          <select id="evento" required>
+            <option value="">Seleccionar...</option>
+            <option value="Pulpo">Pulpo (20:30 o 23:30)</option>
+            <option value="Reina divina">Reina divina (20:30 o 23:30)</option>
+            <option value="City War Lunes">City War Lunes (21:30)</option>
+            <option value="City War Jueves">City War Jueves (21:30)</option>
+            <option value="Bandera">Bandera (Sábado 21:00)</option>
+            <option value="GW">GW (Domingo 16:00-18:00)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>WhatsApp *</label>
+          <input type="tel" id="whatsapp" placeholder="Ej: +1234567890" required />
+        </div>
+
+        <h3>Equipamiento</h3>
+        <div class="equipamiento-grid" id="equipamientoContainer">
+          <!-- Se genera dinámicamente según el tipo -->
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Guardar Cambios</button>
+          <button type="button" onclick="closeAddModal()" class="btn-secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Detalles Personaje (para reserva) -->
+  <div id="detallesModal" class="modal">
+    <div class="modal-content detalles-content">
+      <div class="modal-header">
+        <h2 id="detallesNombre"></h2>
+        <button onclick="closeDetallesModal()" class="close-btn">&times;</button>
+      </div>
+
+      <div id="detallesBody" class="detalles-body">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <div id="detallesActions" class="modal-actions">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Reserva Confirmada -->
+  <div id="reservaModal" class="modal">
+    <div class="modal-content success-content">
+      <div class="success-icon">✓</div>
+      <h2>¡Personaje Reservado!</h2>
+      <div id="reservaDetalles" class="reserva-detalles">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <button onclick="closeReservaModal()" class="btn-primary">Entendido</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
