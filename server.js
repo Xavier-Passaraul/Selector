@@ -183,11 +183,23 @@ app.get('/api/mis-personajes', verificarToken, (req, res) => {
     (err, personajes) => {
       if (err) return res.status(500).json({ error: 'Error en BD' });
       
-      personajes = personajes.map(p => ({
-        ...p,
-        equipamiento: JSON.parse(p.equipamiento),
-        whatsapp: decryptE2E(p.whatsapp) || p.whatsapp
-      }));
+      personajes = personajes.map(p => {
+        let whatsappDesencriptado = null;
+        if (p.whatsapp) {
+          try {
+            whatsappDesencriptado = decryptE2E(p.whatsapp);
+          } catch (err) {
+            console.error('Error desencriptando WhatsApp para personaje', p.id, ':', err);
+            whatsappDesencriptado = null;
+          }
+        }
+        
+        return {
+          ...p,
+          equipamiento: JSON.parse(p.equipamiento),
+          whatsapp: whatsappDesencriptado || p.whatsapp
+        };
+      });
       
       res.json(personajes);
     }
@@ -204,11 +216,23 @@ app.get('/api/personajes', verificarToken, (req, res) => {
     (err, personajes) => {
       if (err) return res.status(500).json({ error: 'Error en BD' });
       
-      personajes = personajes.map(p => ({
-        ...p,
-        equipamiento: JSON.parse(p.equipamiento),
-        whatsapp: decryptE2E(p.whatsapp) || p.whatsapp
-      }));
+      personajes = personajes.map(p => {
+        let whatsappDesencriptado = null;
+        if (p.whatsapp) {
+          try {
+            whatsappDesencriptado = decryptE2E(p.whatsapp);
+          } catch (err) {
+            console.error('Error desencriptando WhatsApp para personaje', p.id, ':', err);
+            whatsappDesencriptado = null;
+          }
+        }
+        
+        return {
+          ...p,
+          equipamiento: JSON.parse(p.equipamiento),
+          whatsapp: whatsappDesencriptado || p.whatsapp
+        };
+      });
       
       res.json(personajes);
     }
@@ -249,6 +273,17 @@ app.post('/api/reservar/:id', verificarToken, (req, res) => {
             `SELECT u.nombre_personaje, u.id FROM usuarios u WHERE u.id = ?`,
             [personaje.usuario_id],
             (err, creador) => {
+              // Desencriptar el WhatsApp
+              let whatsappDesencriptado = null;
+              if (personaje.whatsapp) {
+                try {
+                  whatsappDesencriptado = decryptE2E(personaje.whatsapp);
+                } catch (err) {
+                  console.error('Error desencriptando WhatsApp en reserva:', err);
+                  whatsappDesencriptado = null;
+                }
+              }
+              
               res.json({
                 exito: true,
                 mensaje: 'Personaje reservado',
@@ -256,7 +291,7 @@ app.post('/api/reservar/:id', verificarToken, (req, res) => {
                   ...personaje,
                   equipamiento: JSON.parse(personaje.equipamiento),
                   creador: creador.nombre_personaje,
-                  whatsapp: decryptE2E(personaje.whatsapp) || personaje.whatsapp
+                  whatsapp: whatsappDesencriptado || personaje.whatsapp
                 }
               });
             }

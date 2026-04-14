@@ -1,7 +1,6 @@
 // ============================================
 // CONFIGURACIÓN Y ESTADO
 // ============================================
-console.log("VERSION NUEVA SUBIDA A RENDER");
 
 const API_URL = window.location.origin + '/api';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
@@ -569,22 +568,55 @@ async function reservarPersonaje(personajeId) {
 }
 
 function mostrarReservaExitosa(personaje) {
+  // Desencriptar el WhatsApp si es necesario
+  let whatsappNumber = personaje.whatsapp;
+  
+  // Intentar desencriptar si parece estar encriptado
+  if (typeof whatsappNumber === 'string' && whatsappNumber.includes('U2FsdGVk')) {
+    try {
+      const desencriptado = decryptE2E(whatsappNumber);
+      if (desencriptado) {
+        whatsappNumber = desencriptado;
+      }
+    } catch (err) {
+      console.error('Error desencriptando WhatsApp:', err);
+    }
+  }
+  
+  // Limpiar el número: solo dígitos con el código de país
+  const whatsappLimpio = whatsappNumber.replace(/\D/g, '');
+  
   const mensaje = `Hola ${personaje.creador} reserve ${personaje.nombre_personaje} para el evento ${personaje.evento}, podrías brindarme la cuenta y contraseña?`;
   const mensajeEncodificado = encodeURIComponent(mensaje);
-  const whatsappURL = `https://wa.me/${personaje.whatsapp.replace(/\D/g, '')}?text=${mensajeEncodificado}`;
+  
+  let whatsappURL = '';
+  let botonContacto = '';
+  
+  if (whatsappLimpio && whatsappLimpio.length > 5) {
+    whatsappURL = `https://wa.me/${whatsappLimpio}?text=${mensajeEncodificado}`;
+    botonContacto = `
+      <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--color-secondary);">
+        <strong>Contacta al creador:</strong>
+        <a href="${whatsappURL}" target="_blank" class="whatsapp-link">
+          Enviar Mensaje por WhatsApp
+        </a>
+      </p>
+    `;
+  } else {
+    botonContacto = `
+      <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--color-secondary); color: var(--color-accent);">
+        <strong>⚠️ El creador no tiene WhatsApp registrado</strong>
+      </p>
+    `;
+  }
 
   const detallesHTML = `
     <p><strong>Personaje:</strong> ${personaje.nombre_personaje}</p>
     <p><strong>Tipo:</strong> ${personaje.tipo}</p>
     <p><strong>Evento:</strong> ${personaje.evento} - ${personaje.hora_evento}</p>
     <p><strong>Creador:</strong> ${personaje.creador}</p>
-    <p><strong>WhatsApp:</strong> ${personaje.whatsapp}</p>
-    <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--color-secondary);">
-      <strong>Contacta al creador:</strong>
-      <a href="${whatsappURL}" target="_blank" class="whatsapp-link">
-        Enviar Mensaje
-      </a>
-    </p>
+    <p><strong>WhatsApp:</strong> ${whatsappLimpio || 'No registrado'}</p>
+    ${botonContacto}
   `;
 
   document.getElementById('reservaDetalles').innerHTML = detallesHTML;
