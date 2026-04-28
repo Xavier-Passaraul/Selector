@@ -5,11 +5,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "init-db": "node init-db.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
+    "@vercel/postgres": "^0.5.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.0",
     "cors": "^2.8.5",

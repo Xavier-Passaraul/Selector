@@ -39,7 +39,27 @@ Sistema completo de gestión de personajes para eventos organizacionales. Permit
 - Tipografía elegante
 - Diseño responsivo
 
-## 🛠️ Instalación
+## � Despliegue en Vercel
+
+### Configuración de Base de Datos
+1. Ve a [Vercel Dashboard](https://vercel.com/dashboard) y crea un nuevo proyecto.
+2. Conecta tu repositorio de GitHub.
+3. En el dashboard de Vercel, ve a la pestaña "Storage" y crea una nueva base de datos PostgreSQL.
+4. Copia la cadena de conexión (DATABASE_URL) de las variables de entorno.
+
+### Variables de Entorno
+Agrega estas variables en Vercel (Settings > Environment Variables):
+- `DATABASE_URL`: La URL de conexión de PostgreSQL de Vercel.
+
+### Inicialización de Base de Datos
+Después de desplegar, ejecuta el script de inicialización una vez:
+1. Ve a la pestaña "Functions" en Vercel.
+2. Ejecuta manualmente `init-db.js` o corre `node init-db.js` localmente con la DATABASE_URL configurada.
+
+### Despliegue Automático
+Cada push a la rama principal activará un nuevo despliegue. La aplicación estará disponible en la URL proporcionada por Vercel.
+
+## 🛠️ Instalación Local (Desarrollo)
 
 ### Requisitos
 - Node.js v14 o superior
@@ -49,7 +69,8 @@ Sistema completo de gestión de personajes para eventos organizacionales. Permit
 
 1. **Clonar/Abrir el proyecto**
 ```bash
-
+git clone <tu-repo>
+cd selector-personajes-eventos
 ```
 
 2. **Instalar dependencias**
@@ -57,10 +78,9 @@ Sistema completo de gestión de personajes para eventos organizacionales. Permit
 npm install
 ```
 
-3. **Crear carpeta de base de datos**
-```bash
-mkdir db
-```
+3. **Configurar Base de Datos Local (SQLite)**
+- Para desarrollo local, puedes usar SQLite cambiando las importaciones en los archivos API.
+- O configura PostgreSQL localmente.
 
 4. **Iniciar el servidor**
 ```bash
