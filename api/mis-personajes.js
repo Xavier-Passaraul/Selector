@@ -42,12 +42,12 @@ export default async function handler(req, res) {
     const usuario = verificarToken(req);
 
     const result = await sql`
-      SELECT * FROM personajes WHERE usuario_id = ${usuario.id}
+      SELECT * FROM personajes WHERE usuario_id = ${usuario.nombre_personaje}
     `;
 
     const personajes = result.map(p => ({
       ...p,
-      equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : [],
+      equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : {},
       whatsapp: decryptE2E(p.whatsapp) || p.whatsapp
     }));
 

@@ -26,15 +26,17 @@ export default async function handler(req, res) {
 
   try {
 
+    const usuario = verificarToken(req);
+
     // =========================
     // POST - CREAR PERSONAJE
     // =========================
     if (req.method === 'POST') {
-      const usuario = verificarToken(req);
+
       const { nombre_personaje, tipo, evento, whatsapp, equipamiento } = req.body;
 
       const countResult = await sql`
-        SELECT COUNT(*) FROM personajes WHERE usuario_id = ${usuario.id}
+        SELECT COUNT(*) FROM personajes WHERE usuario_id = ${usuario.nombre_personaje}
       `;
 
       const count = Number(countResult[0].count);
@@ -63,16 +65,18 @@ export default async function handler(req, res) {
           evento,
           hora_evento,
           whatsapp,
-          equipamiento
+          equipamiento,
+          creador
         )
         VALUES (
-          ${usuario.id},
+          ${usuario.nombre_personaje},
           ${nombre_personaje},
           ${tipo},
           ${evento},
           ${hora_evento},
           ${whatsappEncriptado},
-          ${JSON.stringify(equipamiento)}
+          ${JSON.stringify(equipamiento)},
+          ${usuario.nombre_personaje}
         )
         RETURNING id
       `;
@@ -87,18 +91,16 @@ export default async function handler(req, res) {
     // GET - LISTAR PERSONAJES
     // =========================
     if (req.method === 'GET') {
-      const usuario = verificarToken(req);
 
       const result = await sql`
-        SELECT p.*, u.nombre_personaje as creador
-        FROM personajes p
-        JOIN usuarios u ON p.usuario_id = u.id
-        WHERE p.disponible = 1 OR p.usuario_id = ${usuario.id}
+        SELECT *
+        FROM personajes
+        WHERE disponible = true OR usuario_id = ${usuario.nombre_personaje}
       `;
 
       const personajes = result.map(p => ({
         ...p,
-        equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : []
+        equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : {}
       }));
 
       return res.status(200).json(personajes);
