@@ -1,14 +1,20 @@
-const { sql } = require('@vercel/postgres');
-const jwt = require('jsonwebtoken');
-const CryptoJS = require('crypto-js');
+import { neon } from '@neondatabase/serverless';
+import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = 'tu_clave_secreta_segura_2026';
+const sql = neon(process.env.DATABASE_URL);
+
+const SECRET_KEY = process.env.JWT_SECRET || 'dev_secret';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 
 const decryptE2E = (encryptedData) => {
   try {
+    if (!encryptedData) return null;
+
     const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+    return decrypted ? JSON.parse(decrypted) : null;
   } catch (err) {
     console.error('Error desencriptando:', err);
     return null;
@@ -22,36 +28,37 @@ const verificarToken = (req) => {
 };
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    if (req.method !== 'GET') {
+      return res.status(405).json({ error: 'Método no permitido' });
+    }
+
     const usuario = verificarToken(req);
 
     const result = await sql`
       SELECT * FROM personajes WHERE usuario_id = ${usuario.id}
     `;
 
-    const personajes = result.rows.map(p => ({
+    const personajes = result.map(p => ({
       ...p,
-      equipamiento: JSON.parse(p.equipamiento),
+      equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : [],
       whatsapp: decryptE2E(p.whatsapp) || p.whatsapp
     }));
 
-    res.json(personajes);
+    return res.status(200).json(personajes);
+
   } catch (error) {
     console.error('Error obteniendo mis personajes:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+      detail: error.message
+    });
   }
 }
