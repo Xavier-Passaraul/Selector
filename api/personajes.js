@@ -1,8 +1,10 @@
-const { sql } = require('@vercel/postgres');
-const jwt = require('jsonwebtoken');
-const CryptoJS = require('crypto-js');
+import { neon } from '@neondatabase/serverless';
+import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = 'tu_clave_secreta_segura_2026';
+const sql = neon(process.env.DATABASE_URL);
+
+const SECRET_KEY = process.env.JWT_SECRET || 'dev_secret';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 
 const encryptE2E = (data) => {
@@ -16,26 +18,28 @@ const verificarToken = (req) => {
 };
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (req.method === 'POST') {
-    try {
+  try {
+
+    // =========================
+    // POST - CREAR PERSONAJE
+    // =========================
+    if (req.method === 'POST') {
       const usuario = verificarToken(req);
       const { nombre_personaje, tipo, evento, whatsapp, equipamiento } = req.body;
 
-      // Validar límite de 200 personajes
       const countResult = await sql`
-        SELECT COUNT(*) as count FROM personajes WHERE usuario_id = ${usuario.id}
+        SELECT COUNT(*) FROM personajes WHERE usuario_id = ${usuario.id}
       `;
-      if (countResult.rows[0].count >= 200) {
+
+      const count = Number(countResult[0].count);
+
+      if (count >= 200) {
         return res.status(400).json({ error: 'Límite de 200 personajes alcanzado' });
       }
 
@@ -52,37 +56,62 @@ export default async function handler(req, res) {
       const whatsappEncriptado = encryptE2E(whatsapp);
 
       const result = await sql`
-        INSERT INTO personajes (usuario_id, nombre_personaje, tipo, evento, hora_evento, whatsapp, equipamiento)
-        VALUES (${usuario.id}, ${nombre_personaje}, ${tipo}, ${evento}, ${hora_evento}, ${whatsappEncriptado}, ${JSON.stringify(equipamiento)})
+        INSERT INTO personajes (
+          usuario_id,
+          nombre_personaje,
+          tipo,
+          evento,
+          hora_evento,
+          whatsapp,
+          equipamiento
+        )
+        VALUES (
+          ${usuario.id},
+          ${nombre_personaje},
+          ${tipo},
+          ${evento},
+          ${hora_evento},
+          ${whatsappEncriptado},
+          ${JSON.stringify(equipamiento)}
+        )
         RETURNING id
       `;
 
-      res.status(201).json({ id: result.rows[0].id, mensaje: 'Personaje creado' });
-    } catch (error) {
-      console.error('Error creando personaje:', error);
-      res.status(500).json({ error: 'Error interno del servidor' });
+      return res.status(201).json({
+        id: result[0].id,
+        mensaje: 'Personaje creado'
+      });
     }
-  } else if (req.method === 'GET') {
-    try {
+
+    // =========================
+    // GET - LISTAR PERSONAJES
+    // =========================
+    if (req.method === 'GET') {
       const usuario = verificarToken(req);
 
       const result = await sql`
-        SELECT p.*, u.nombre_personaje as creador FROM personajes p
+        SELECT p.*, u.nombre_personaje as creador
+        FROM personajes p
         JOIN usuarios u ON p.usuario_id = u.id
         WHERE p.disponible = 1 OR p.usuario_id = ${usuario.id}
       `;
 
-      const personajes = result.rows.map(p => ({
+      const personajes = result.map(p => ({
         ...p,
-        equipamiento: JSON.parse(p.equipamiento)
+        equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : []
       }));
 
-      res.json(personajes);
-    } catch (error) {
-      console.error('Error obteniendo personajes:', error);
-      res.status(500).json({ error: 'Error interno del servidor' });
+      return res.status(200).json(personajes);
     }
-  } else {
-    res.status(405).json({ error: 'Método no permitido' });
+
+    return res.status(405).json({ error: 'Método no permitido' });
+
+  } catch (error) {
+    console.error('Error personajes:', error);
+
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+      detail: error.message
+    });
   }
 }
