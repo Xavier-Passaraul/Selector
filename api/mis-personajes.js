@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 
 const sql = neon(process.env.DATABASE_URL);
 
-const SECRET_KEY = process.env.JWT_SECRET || 'dev_secret';
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 
 const decryptE2E = (encryptedData) => {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const usuario = verificarToken(req);
 
     const result = await sql`
-      SELECT * FROM personajes WHERE usuario_id = ${usuario.nombre_personaje}
+      SELECT * FROM personajes WHERE usuario_id = ${usuario.id}
     `;
 
     const personajes = result.map(p => ({

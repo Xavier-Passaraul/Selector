@@ -1,8 +1,9 @@
-const { sql } = require('@vercel/postgres');
-const jwt = require('jsonwebtoken');
-const CryptoJS = require('crypto-js');
+import { neon } from '@neondatabase/serverless';
+import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = 'tu_clave_secreta_segura_2026';
+const sql = neon(process.env.DATABASE_URL);
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 
 const decryptE2E = (encryptedData) => {
@@ -44,11 +45,11 @@ export default async function handler(req, res) {
     const personajeResult = await sql`
       SELECT * FROM personajes WHERE id = ${id}
     `;
-    if (personajeResult.rows.length === 0) {
+    if (personajeResult.length === 0) {
       return res.status(404).json({ error: 'Personaje no encontrado' });
     }
 
-    const personaje = personajeResult.rows[0];
+    const personaje = personajeResult[0];
     if (personaje.disponible === 0) {
       return res.status(400).json({ error: 'Personaje ya está reservado' });
     }
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
       personaje: {
         ...personaje,
         equipamiento: JSON.parse(personaje.equipamiento),
-        creador: creadorResult.rows[0].nombre_personaje,
+        creador: creadorResult[0].nombre_personaje,
         whatsapp: decryptE2E(personaje.whatsapp) || personaje.whatsapp
       }
     });

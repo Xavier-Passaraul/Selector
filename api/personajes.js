@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 
 const sql = neon(process.env.DATABASE_URL);
 
-const SECRET_KEY = process.env.JWT_SECRET || 'dev_secret';
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 const ENCRYPTION_KEY = 'clave_encriptacion_e2e_2026_selector';
 
 const encryptE2E = (data) => {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       const { nombre_personaje, tipo, evento, whatsapp, equipamiento } = req.body;
 
       const countResult = await sql`
-        SELECT COUNT(*) FROM personajes WHERE usuario_id = ${usuario.nombre_personaje}
+        SELECT COUNT(*) FROM personajes WHERE usuario_id = ${usuario.id}
       `;
 
       const count = Number(countResult[0].count);
@@ -55,7 +55,9 @@ export default async function handler(req, res) {
       };
 
       const hora_evento = horas[evento] || '';
-      const whatsappEncriptado = encryptE2E(whatsapp);
+      
+      // El whatsapp ya viene encriptado del frontend
+      const whatsappEncriptado = whatsapp;
 
       const result = await sql`
         INSERT INTO personajes (
@@ -65,18 +67,16 @@ export default async function handler(req, res) {
           evento,
           hora_evento,
           whatsapp,
-          equipamiento,
-          creador
+          equipamiento
         )
         VALUES (
-          ${usuario.nombre_personaje},
+          ${usuario.id},
           ${nombre_personaje},
           ${tipo},
           ${evento},
           ${hora_evento},
           ${whatsappEncriptado},
-          ${JSON.stringify(equipamiento)},
-          ${usuario.nombre_personaje}
+          ${JSON.stringify(equipamiento)}
         )
         RETURNING id
       `;
@@ -93,14 +93,18 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
 
       const result = await sql`
-        SELECT *
-        FROM personajes
-        WHERE disponible = true OR usuario_id = ${usuario.nombre_personaje}
+        SELECT 
+          p.*,
+          u.nombre_personaje as creador
+        FROM personajes p
+        LEFT JOIN usuarios u ON p.usuario_id = u.id
+        WHERE p.disponible = true OR p.usuario_id = ${usuario.id}
       `;
 
       const personajes = result.map(p => ({
         ...p,
-        equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : {}
+        equipamiento: p.equipamiento ? JSON.parse(p.equipamiento) : {},
+        whatsapp: decryptE2E(p.whatsapp) || p.whatsapp
       }));
 
       return res.status(200).json(personajes);

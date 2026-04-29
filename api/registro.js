@@ -1,8 +1,9 @@
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = 'tu_clave_secreta_segura_2026';
+const sql = neon(process.env.DATABASE_URL);
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
       RETURNING id, nombre_personaje
     `;
 
-    const usuario = result.rows[0];
+    const usuario = result[0];
 
     const token = jwt.sign(
       { id: usuario.id, nombre_personaje: usuario.nombre_personaje },
@@ -46,11 +47,11 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    if (error.code === '23505') {
+    if (error.code === '23505' || error.message.includes('duplicate key')) {
       return res.status(400).json({ error: 'El usuario ya existe' });
     }
 
-    console.error(error);
+    console.error('REGISTRO ERROR:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }

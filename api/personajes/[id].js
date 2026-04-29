@@ -1,7 +1,8 @@
-const { sql } = require('@vercel/postgres');
-const jwt = require('jsonwebtoken');
+import { neon } from '@neondatabase/serverless';
+import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = 'tu_clave_secreta_segura_2026';
+const sql = neon(process.env.DATABASE_URL);
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 
 const verificarToken = (req) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
     const personajeResult = await sql`
       SELECT usuario_id FROM personajes WHERE id = ${id}
     `;
-    if (personajeResult.rows.length === 0 || personajeResult.rows[0].usuario_id !== usuario.id) {
+    if (personajeResult.length === 0 || personajeResult[0].usuario_id !== usuario.id) {
       return res.status(403).json({ error: 'No autorizado' });
     }
 

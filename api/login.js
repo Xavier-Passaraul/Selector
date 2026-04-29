@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const sql = neon(process.env.DATABASE_URL);
-const SECRET_KEY = process.env.JWT_SECRET || 'dev_secret';
+const SECRET_KEY = process.env.JWT_SECRET || 'tu_clave_secreta_segura_2026';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     const result = await sql`
-      SELECT id, nombre_personaje, password
+      SELECT id, nombre_personaje, contraseña
       FROM usuarios
       WHERE nombre_personaje = ${nombre_personaje}
     `;
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     const usuario = result[0];
 
-    const ok = await bcrypt.compare(contraseña, usuario.password);
+    const ok = await bcrypt.compare(contraseña, usuario.contraseña);
 
     if (!ok) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });

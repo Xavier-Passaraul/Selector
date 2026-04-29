@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@vercel/postgres": "^0.5.1",
+    "@neondatabase/serverless": "^0.9.0",
     "bcryptjs": "^2.4.3",
     "crypto-js": "^4.2.0",
     "jsonwebtoken": "^9.0.3"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "init-db": "node init-db.js"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
