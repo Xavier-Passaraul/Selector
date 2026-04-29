@@ -8,6 +8,17 @@ let usuarioActual = null;
 let tokenUsuario = null;
 let personajeFiltrado = null;
 
+async function safeJson(response) {
+  const text = await response.text();
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("❌ No es JSON válido:", text);
+    return null;
+  }
+}
+
 // Funciones de encriptación E2E
 const encryptE2E = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), ENCRYPTION_KEY).toString();
@@ -354,8 +365,16 @@ async function cargarPersonajes() {
       headers: { 'Authorization': `Bearer ${tokenUsuario}` }
     });
 
-    const personajes = await response.json();
+    const personajes = await safeJson(response);
+
+    if (!Array.isArray(personajes)) {
+      console.error("❌ Error API /personajes:", personajes);
+      mostrarPersonajesBusqueda([]);
+      return;
+    }
+
     mostrarPersonajesBusqueda(personajes);
+
   } catch (error) {
     console.error('Error:', error);
   }
