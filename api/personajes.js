@@ -11,6 +11,16 @@ const encryptE2E = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), ENCRYPTION_KEY).toString();
 };
 
+const decryptE2E = (encryptedData) => {
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+  } catch (e) {
+    console.error('Error al desencriptar:', e);
+    return null;
+  }
+};
+
 const verificarToken = (req) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) throw new Error('No autorizado');
@@ -25,7 +35,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-
     const usuario = verificarToken(req);
 
     // =========================
@@ -56,7 +65,6 @@ export default async function handler(req, res) {
 
       const hora_evento = horas[evento] || '';
       
-      // El whatsapp ya viene encriptado del frontend
       const whatsappEncriptado = whatsapp;
 
       const result = await sql`
@@ -88,7 +96,7 @@ export default async function handler(req, res) {
     }
 
     // =========================
-    // GET - LISTAR PERSONAJES
+    // GET - LISTAR PERSONAJES (BUSCAR)
     // =========================
     if (req.method === 'GET') {
 
@@ -98,7 +106,8 @@ export default async function handler(req, res) {
           u.nombre_personaje as creador
         FROM personajes p
         LEFT JOIN usuarios u ON p.usuario_id = u.id
-        WHERE p.disponible = true OR p.usuario_id = ${usuario.id}
+        WHERE p.disponible = 1 
+           OR p.usuario_id = ${usuario.id}
       `;
 
       const personajes = result.map(p => ({
@@ -114,7 +123,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error personajes:', error);
-
     return res.status(500).json({
       error: 'Error interno del servidor',
       detail: error.message
