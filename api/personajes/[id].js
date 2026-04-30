@@ -11,14 +11,12 @@ const verificarToken = (req) => {
 };
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   if (req.method !== 'DELETE') {
@@ -30,20 +28,47 @@ export default async function handler(req, res) {
   try {
     const usuario = verificarToken(req);
 
-    const personajeResult = await sql`
-      SELECT usuario_id FROM personajes WHERE id = ${id}
-    `;
-    if (personajeResult.length === 0 || personajeResult[0].usuario_id !== usuario.id) {
-      return res.status(403).json({ error: 'No autorizado' });
+    // Convertir id a número para mayor seguridad
+    const personajeId = parseInt(id);
+    if (isNaN(personajeId)) {
+      return res.status(400).json({ error: 'ID inválido' });
     }
 
-    await sql`
-      DELETE FROM personajes WHERE id = ${id}
+    // Verificar que el personaje exista y pertenezca al usuario
+    const personajeResult = await sql`
+      SELECT usuario_id FROM personajes 
+      WHERE id = ${personajeId}
     `;
 
-    res.json({ exito: true });
+    if (personajeResult.length === 0) {
+      return res.status(404).json({ error: 'Personaje no encontrado' });
+    }
+
+    if (personajeResult[0].usuario_id !== usuario.id) {
+      return res.status(403).json({ error: 'No autorizado para eliminar este personaje' });
+    }
+
+    // Eliminar el personaje
+    const deleteResult = await sql`
+      DELETE FROM personajes 
+      WHERE id = ${personajeId}
+      RETURNING id
+    `;
+
+    if (deleteResult.length === 0) {
+      return res.status(404).json({ error: 'No se pudo eliminar el personaje' });
+    }
+
+    return res.status(200).json({ 
+      exito: true, 
+      mensaje: 'Personaje eliminado correctamente' 
+    });
+
   } catch (error) {
     console.error('Error eliminando personaje:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    return res.status(500).json({ 
+      error: 'Error interno del servidor',
+      detail: error.message 
+    });
   }
 }
