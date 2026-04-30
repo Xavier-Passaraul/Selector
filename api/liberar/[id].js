@@ -11,44 +11,97 @@ const verificarToken = (req) => {
 };
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(200).end();
   }
 
   const { id } = req.query;
+  const personajeId = parseInt(id);
+
+  if (isNaN(personajeId)) {
+    return res.status(400).json({ error: 'ID inválido' });
+  }
 
   try {
     const usuario = verificarToken(req);
 
+    // Verificar que el personaje exista y pertenezca al usuario
     const personajeResult = await sql`
-      SELECT * FROM personajes WHERE id = ${id}
+      SELECT usuario_id FROM personajes WHERE id = ${personajeId}
     `;
+
     if (personajeResult.length === 0) {
       return res.status(404).json({ error: 'Personaje no encontrado' });
     }
 
-    const personaje = personajeResult[0];
-    if (personaje.usuario_id !== usuario.id) {
-      return res.status(403).json({ error: 'No tienes permiso' });
+    if (personajeResult[0].usuario_id !== usuario.id) {
+      return res.status(403).json({ error: 'No tienes permiso para modificar este personaje' });
     }
 
-    await sql`
-      UPDATE personajes SET disponible = 1, reservado_por = NULL WHERE id = ${id}
-    `;
+    // ========================
+    // LIBERAR PERSONAJE (POST)
+    // ========================
+    if (req.method === 'POST') {
 
-    res.json({ exito: true, mensaje: 'Personaje liberado' });
+      // Eliminar la reserva asociada
+      await sql`
+        DELETE FROM reservas 
+        WHERE personaje_id = ${personajeId}
+      `;
+
+      // Actualizar el personaje a disponible
+      await sql`
+        UPDATE personajes 
+        SET disponible = 1, 
+            reservado_por = NULL 
+        WHERE id = ${personajeId}
+      `;
+
+      return res.json({ 
+        exito: true, 
+        mensaje: 'Personaje liberado correctamente' 
+      });
+    }
+
+    // ========================
+    // ELIMINAR PERSONAJE (DELETE)
+    // ========================
+    if (req.method === 'DELETE') {
+
+      // Primero eliminamos cualquier reserva que pueda quedar
+      await sql`
+        DELETE FROM reservas 
+        WHERE personaje_id = ${personajeId}
+      `;
+
+      // Luego eliminamos el personaje
+      const deleteResult = await sql`
+        DELETE FROM personajes 
+        WHERE id = ${personajeId}
+        RETURNING id
+      `;
+
+      if (deleteResult.length === 0) {
+        return res.status(404).json({ error: 'No se pudo eliminar el personaje' });
+      }
+
+      return res.json({ 
+        exito: true, 
+        mensaje: 'Personaje eliminado correctamente' 
+      });
+    }
+
+    return res.status(405).json({ error: 'Método no permitido' });
+
   } catch (error) {
-    console.error('Error liberando personaje:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error en [id].js:', error);
+    return res.status(500).json({ 
+      error: 'Error interno del servidor',
+      detail: error.message 
+    });
   }
 }
